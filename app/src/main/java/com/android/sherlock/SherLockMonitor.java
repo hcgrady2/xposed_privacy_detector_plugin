@@ -1,6 +1,9 @@
 package com.android.sherlock;
 
+import android.annotation.SuppressLint;
+import android.content.pm.PackageManager;
 import android.location.LocationManager;
+import android.os.Environment;
 
 import de.robv.android.xposed.IXposedHookLoadPackage;
 import de.robv.android.xposed.XC_MethodHook;
@@ -32,6 +35,7 @@ import de.robv.android.xposed.callbacks.XC_LoadPackage;
  */
 public class SherLockMonitor  implements IXposedHookLoadPackage {
 
+    @SuppressLint("PrivateApi")
     public void handleLoadPackage(XC_LoadPackage.LoadPackageParam lpparam) {
 
         if (lpparam == null) {
@@ -133,6 +137,78 @@ public class SherLockMonitor  implements IXposedHookLoadPackage {
                     }
                 }
         );
+
+
+        //hook 读
+//        XposedHelpers.findAndHookMethod(
+//                Environment.class.getName(),
+//                lpparam.classLoader,
+//                "getExternalStorageDirectory",
+//                new XC_MethodHook() {
+//                    @Override
+//                    protected void beforeHookedMethod(MethodHookParam param) {
+//                        XposedBridge.log("getExternalStorageDirectory");
+//                    }
+//
+//                    @Override
+//                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+//                        XposedBridge.log(getMethodStack());
+//                        super.afterHookedMethod(param);
+//                    }
+//                }
+//        );
+//
+
+
+        //(Class.forName("android.app.ApplicationPackageManager")
+        XposedHelpers.findAndHookMethod(
+                PackageManager.class.getName(),
+                lpparam.classLoader,
+                "getPackageInfoAsUser",
+                String.class,int.class,int.class,
+                new XC_MethodHook() {
+                    @Override
+                    protected void beforeHookedMethod(MethodHookParam param) {
+                        XposedBridge.log("发现了违规调用，PackageManager#getPackageInfoAsUser().....");
+                    }
+
+                    @Override
+                    protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                        XposedBridge.log(getMethodStack());
+                        super.afterHookedMethod(param);
+                    }
+                }
+        );
+
+
+
+        try {
+            XposedHelpers.findAndHookMethod(
+                    Class.forName("android.app.ApplicationPackageManager").getName(),
+                    lpparam.classLoader,
+                    "getPackageInfoAsUser",
+                    String.class,int.class,int.class,
+                    new XC_MethodHook() {
+                        @Override
+                        protected void beforeHookedMethod(MethodHookParam param) {
+                            XposedBridge.log("发现了违规调用,ApplicationPackageManager#getPackageInfoAsUser()");
+                        }
+
+                        @Override
+                        protected void afterHookedMethod(MethodHookParam param) throws Throwable {
+                            XposedBridge.log(getMethodStack());
+                            super.afterHookedMethod(param);
+                        }
+                    }
+            );
+        }catch (Exception e){
+
+        }
+
+
+
+
+
     }
 
     private String getMethodStack() {
